@@ -116,6 +116,11 @@ __kernel void global_bandwidth_v4_global_offset(__global float4 *A, __global flo
 {
     int id = get_global_id(0);
     float4 sum = 0;
+    // if (get_global_id(0) == 0 && get_global_id(1) == 0 && get_global_id(2) == 0
+    //     && get_local_id(0) == 0 && get_local_id(1) == 0 && get_local_id(2) == 0) {
+    //     printf("gdim(%d,%d,%d), ldm(%d,%d,%d) wgs(%d,%d,%d)\n", (uint)get_global_size(0),(uint)get_global_size(1),(uint)get_global_size(2),
+    //             (uint)get_local_size(0),(uint)get_local_size(1),(uint)get_local_size(3));
+    // }
 
     for(int i=0; i<4; i++)
     {
@@ -123,6 +128,9 @@ __kernel void global_bandwidth_v4_global_offset(__global float4 *A, __global flo
     }
 
     B[get_global_id(0)] = (sum.S0) + (sum.S1) + (sum.S2) + (sum.S3);
+    B[get_global_id(0)+get_local_size(0) * 1] = (sum.S0) + (sum.S1) + (sum.S2) + (sum.S3);
+    B[get_global_id(0)+get_local_size(0) * 2] = (sum.S0) + (sum.S1) + (sum.S2) + (sum.S3);
+    B[get_global_id(0)+get_local_size(0) * 3] = (sum.S0) + (sum.S1) + (sum.S2) + (sum.S3);
 }
 
 

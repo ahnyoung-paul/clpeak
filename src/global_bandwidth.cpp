@@ -1,4 +1,5 @@
 #include <clpeak.h>
+#include <locale.h>
 
 #define FETCH_PER_WI 16
 
@@ -16,6 +17,14 @@ int clPeak::runGlobalBandwidthTest(cl::CommandQueue &queue, cl::Program &prog, d
 
   uint64_t maxItems = devInfo.maxAllocSize / sizeof(float) / 2;
   uint64_t numItems = roundToMultipleOf(maxItems, (devInfo.maxWGSize * FETCH_PER_WI * 16), devInfo.globalBWMaxSize);
+
+  printf("numCUs          : %d\n", devInfo.numCUs);
+  printf("maxWGSize       : %d\n", devInfo.maxWGSize);
+  printf("globalBWMaxSize : %lld\n", devInfo.globalBWMaxSize);
+  printf("maxGlobalSize   : %lld\n", devInfo.maxGlobalSize);
+  printf("computeWgsPerCU : %lld\n", devInfo.computeWgsPerCU);
+
+  printf("FETCH_PER_WI    : %d\n", FETCH_PER_WI);
 
   try
   {
@@ -107,19 +116,28 @@ int clPeak::runGlobalBandwidthTest(cl::CommandQueue &queue, cl::Program &prog, d
     // Vector width 4
     if (!forceTest || strcmp(specifiedTestName, "float4") == 0)
     {
-      log->print(TAB TAB TAB "float4  : ");
-
+      numItems = 1024 * 2 * 16 * 128;
+      printf("numItems        : %d\n", numItems);
+      printf("numIter         : %d\n", iters);
       globalSize = (numItems / 4 / FETCH_PER_WI);
-
+      printf("Global workgroup size: [%ld, %ld, %ld]\n", globalSize.get()[0],globalSize.get()[1],globalSize.get()[2] );
+      printf("Local workgroup size : [%ld, %ld, %ld]\n", localSize.get()[0],localSize.get()[1],localSize.get()[2] );
+      iters = 1;
+      log->print(TAB TAB TAB "float4_local_offset  : ");
       timed_lo = run_kernel(queue, kernel_v4_lo, globalSize, localSize, iters);
       timed_go = run_kernel(queue, kernel_v4_go, globalSize, localSize, iters);
       timed = (timed_lo < timed_go) ? timed_lo : timed_go;
 
-      gbps = ((float)numItems * sizeof(float)) / timed / 1e3f;
+      auto gbps_lo = ((float)numItems * sizeof(float)) / timed_lo / 1e3f;
 
-      log->print(gbps);
+      log->print(gbps_lo);
       log->print(NEWLINE);
-      log->xmlRecord("float4", gbps);
+      log->print(TAB TAB TAB "float4_global_offset  : ");
+      auto gbps_go = ((float)numItems * sizeof(float)) / timed_go / 1e3f;
+
+      log->print(gbps_go);
+      log->print(NEWLINE);
+      log->xmlRecord("float4_global_", gbps);
     }
     ///////////////////////////////////////////////////////////////////////////
 
